@@ -13,5 +13,5 @@ class TelegramOperator(BaseOperator):
 
     def execute(self, context):
         tb = telebot.TeleBot(token=self.bot_token)
-        tb.send_message(self.sent_to, self.msg)
+        tb.send_message(self.send_to, self.msg)
         return f'send to:{self.send_to}, msg: {self.msg}'

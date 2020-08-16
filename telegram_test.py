@@ -1,9 +1,10 @@
 from datetime import timedelta
-from telegram import TelegramOperator
+
 from airflow.models import DAG
-from airflow.operators.bash_operator import BashOperator
-from airflow.utils.dates import days_ago
 from airflow.models import Variable
+from airflow.utils.dates import days_ago
+
+from telegram import TelegramOperator
 
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2),
                 'depends_on_past': False,
@@ -17,7 +18,8 @@ dag = DAG(
     tags=['example', 'bash']
 )
 message = 'HELLO GIL'
-telegram = TelegramOperator(bot_token=Variable.get('TELEGRAM_TOKEN'),send_to=Variable.get('TELEGRAM_USER'),msg=message,task_id='telegram', dag=dag)
+telegram = TelegramOperator(Variable.get('TELEGRAM_TOKEN'), Variable.get('TELEGRAM_USER'),
+                            message, task_id='telegram', dag=dag)
 
 if __name__ == "__main__":
     dag.cli()
