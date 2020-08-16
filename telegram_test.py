@@ -18,7 +18,7 @@ dag = DAG(
     tags=['example', 'bash']
 )
 message = 'HELLO GIL'
-telegram = TelegramOperator(bot_token=Variable.get('TELEGRAM_TOKEN'), send_to=Variable.get('TELEGRAM_USER'),
+telegram = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')), send_to=Variable.get('TELEGRAM_USER'),
                             msg=message, task_id='telegram', dag=dag)
 
 if __name__ == "__main__":
