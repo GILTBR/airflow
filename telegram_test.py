@@ -11,7 +11,7 @@ default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2),
                 'email': ['giltober@gmail.com']}
 
 dag = DAG(
-    dag_id='simple_bash_dag',
+    dag_id='telegram_dag',
     default_args=default_args,
     schedule_interval=None,
     dagrun_timeout=timedelta(minutes=60),
