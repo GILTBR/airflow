@@ -1,22 +1,23 @@
 from datetime import timedelta
-
+from telegram import TelegramOperator
 from airflow.models import DAG
-from airflow.operators.email_operator import EmailOperator
+from airflow.operators.bash_operator import BashOperator
 from airflow.utils.dates import days_ago
+from airflow.models import Variable
 
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2),
                 'depends_on_past': False,
                 'email': ['giltober@gmail.com']}
 
 dag = DAG(
-    dag_id='simple_email_dag',
+    dag_id='simple_bash_dag',
     default_args=default_args,
     schedule_interval=None,
     dagrun_timeout=timedelta(minutes=60),
     tags=['example', 'bash']
 )
-
-email_dag = EmailOperator(task_id='email_dag', dag=dag, to='giltober@gmail.com', subject='Airflow test', html_content=None)
+message = 'HELLO GIL'
+telegram = TelegramOperator(bot_token=Variable.get('TELEGRAM_TOKEN'),send_to=Variable.get('TELEGRAM_USER'),msg=message,task_id='telegram', dag=dag)
 
 if __name__ == "__main__":
     dag.cli()

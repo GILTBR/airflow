@@ -1,0 +1,9 @@
+import telebot
+from airflow.models.baseoperator import BaseOperator
+from airflow.utils.decorators import apply_defaults
+
+class TelegramOperator(BaseOperator):
+
+	@apply_defaults
+	def __init__(self,bot_token,send_to,msg,*args,**kwargs):
+		super().__init__(*args,**kwatgs)
