@@ -18,19 +18,19 @@ dag = DAG(
     tags=['example', 'postgres', 'telegram']
 )
 
-create_table = PostgresOperator(sql='sql.sql', postgres_conn_id='postgres_default', autocommit=True, database='postgre',
+create_table = PostgresOperator(sql='sql.sql', postgres_conn_id='postgres_prod', autocommit=True, database='postgre',
                                 task_id='create_table', dag=dag)
 
 on_fail_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
                                             send_to=Variable.get('TELEGRAM_USER'),
                                             msg=f'{datetime.now()}: table creations failed',
-                                            task_id='on_fail_telegram_message', dag=dag, trigger_rule='all_success')
+                                            task_id='on_fail_telegram_message', dag=dag, trigger_rule='all_failed')
 
 on_success_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
                                                send_to=Variable.get('TELEGRAM_USER'),
                                                msg=f'{datetime.now()}: table created successfully',
                                                task_id='on_success_telegram_message',
-                                               dag=dag, trigger_rule='all_failed')
+                                               dag=dag, trigger_rule='all_success')
 
 create_table >> on_fail_telegram_message
 create_table >> on_success_telegram_message
