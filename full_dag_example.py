@@ -35,7 +35,7 @@ def pull_exchange_rate():
 
     req = requests.get(f"http://data.fixer.io/api/{rate_date}?access_key={str(Variable.get('EXCHANGE_KEY'))}&base=EUR")
     if req.json()['success']:
-        con = create_engine(Variable.get('AIRFLOW_CONN_POSTGRES_PROD'))
+        con = create_engine(str(Variable.get('AIRFLOW_CONN_POSTGRES_PROD')))
         usd_currency = req.json()['rates']['USD']
         df = pd.DataFrame(req.json()).drop(['success', 'base', 'timestamp', 'historical'], axis=1).reset_index().rename(
             columns={'index': 'code', 'rates': 'rate'})
