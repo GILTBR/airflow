@@ -24,8 +24,8 @@ dag = DAG(
 )
 
 
-def to_usd(rate, usd_currency):
-    return round(usd_currency * (1 / rate), 20)
+def to_usd(rate, base=0):
+    return round(base * (1 / rate), 20)
 
 
 def pull_exchange_rate():
@@ -39,7 +39,7 @@ def pull_exchange_rate():
         usd_currency = req.json()['rates']['USD']
         df = pd.DataFrame(req.json()).drop(['success', 'base', 'timestamp', 'historical'], axis=1).reset_index().rename(
             columns={'index': 'code', 'rates': 'rate'})
-        df['rate'] = df['rate'].apply(to_usd, args=usd_currency)
+        df['rate'] = df['rate'].apply(to_usd, base=usd_currency)
         df = df[['code', 'rate', 'date']].astype({'date': 'datetime64'})
         df.to_sql('usd_exchange_rates', con=con, schema='prod', if_exists='append', index=False, chunksize=200,
                   method='multi')
