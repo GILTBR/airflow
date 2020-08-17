@@ -18,7 +18,7 @@ dag = DAG(
     tags=['example', 'postgres', 'telegram']
 )
 
-create_table = PostgresOperator(sql='sql.sql', postgres_conn_id='postgres_prod', autocommit=True, database='postgre',
+create_table = PostgresOperator(sql='sql.sql', postgres_conn_id='postgres_prod', autocommit=True, database='postgres',
                                 task_id='create_table', dag=dag)
 
 on_fail_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
