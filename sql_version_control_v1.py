@@ -31,19 +31,20 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
          schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60), tags=['git', 'sql']) as dag:
     git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
 
-    dummy = DummyOperator(task_id='dummy')
+    dummy1 = DummyOperator(task_id='dummy1')
+    dummy2 = DummyOperator(task_id='dummy2')
 
     for file in os.listdir(SQL_DELETE_FOLDER):
         file_name = file.split('.')[0]
         delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod', sql=file,
                                       autocommit=True)
-        git_pull >> delete_sql
+        git_pull >> delete_sql >> dummy1
 
     for file in os.listdir(SQL_CREATE_FOLDER):
         file_name = file.split('.')[0]
         create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod', sql=file,
                                       autocommit=True)
-        delete_sql >> create_sql >> dummy
+        dummy1 >> create_sql >> dummy2
 
     on_fail_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
                                                 send_to=Variable.get('TELEGRAM_USER'),
@@ -56,7 +57,7 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
                                                        f'successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
 
-dummy >> on_fail_telegram_message
-dummy >> on_success_telegram_message
+dummy2 >> on_fail_telegram_message
+dummy2 >> on_success_telegram_message
 if __name__ == "__main__":
     dag.cli()
