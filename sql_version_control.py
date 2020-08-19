@@ -4,6 +4,7 @@ import os
 from airflow.models import DAG
 from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
+from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.dates import days_ago
 
@@ -29,6 +30,8 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
          schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60), tags=['git', 'sql']) as dag:
     git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
 
+    dummy = DummyOperator(task_id='dummy')
+
     for file in os.listdir(SQL_TRUNCATE_FOLDER):
         truncate_sql = PostgresOperator(task_id=f'truncate_sql({file})', postgres_conn_id='postgres_prod', sql=file,
                                         autocommit=True)
@@ -37,7 +40,7 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
     for file in os.listdir(SQL_CREATE_FOLDER):
         create_sql = PostgresOperator(task_id=f'create_sql({file})', postgres_conn_id='postgres_prod', sql=file,
                                       autocommit=True)
-        truncate_sql >> create_sql
+        truncate_sql >> create_sql >> dummy
 
     on_fail_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
                                                 send_to=Variable.get('TELEGRAM_USER'),
@@ -49,7 +52,8 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
                                                    msg=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} '
                                                        f'successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
-create_sql >> on_fail_telegram_message
-create_sql >> on_success_telegram_message
+
+dummy >> on_fail_telegram_message
+dummy >> on_success_telegram_message
 if __name__ == "__main__":
     dag.cli()
