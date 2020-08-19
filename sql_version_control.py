@@ -34,13 +34,13 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
 
     for file in os.listdir(SQL_TRUNCATE_FOLDER):
         file_name = file.split('.')[0]
-        truncate_sql = PostgresOperator(task_id=f'truncate_sql({file_name})', postgres_conn_id='postgres_prod', sql=file,
+        truncate_sql = PostgresOperator(task_id=f'truncate_sql_{file_name}', postgres_conn_id='postgres_prod', sql=file,
                                         autocommit=True)
         git_pull >> truncate_sql
 
     for file in os.listdir(SQL_CREATE_FOLDER):
         file_name = file.split('.')[0]
-        create_sql = PostgresOperator(task_id=f'create_sql({file_name})', postgres_conn_id='postgres_prod', sql=file,
+        create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod', sql=file,
                                       autocommit=True)
         truncate_sql >> create_sql >> dummy
 
