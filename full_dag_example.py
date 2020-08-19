@@ -49,16 +49,15 @@ def pull_exchange_rate():
                   method='multi')
 
 
-create_table = PostgresOperator(sql='sql.sql', postgres_conn_id='postgres_prod', autocommit=True, database='postgres',
-                                task_id='create_table', dag=dag)
+create_table = PostgresOperator(sql='create_table.sql', postgres_conn_id='postgres_prod', autocommit=True,
+                                database='postgres', task_id='create_table', dag=dag)
 
 pull_exchange = PythonOperator(python_callable=pull_exchange_rate, task_id='pull_exchange', dag=dag)
 
 on_fail_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
                                             send_to=Variable.get('TELEGRAM_USER'),
                                             msg=f'{dt.datetime.now().replace(microsecond=0)}: API call failed',
-                                            task_id='on_fail_telegram_message', dag=dag,
-                                            trigger_rule='all_failed')
+                                            task_id='on_fail_telegram_message', dag=dag, trigger_rule='all_failed')
 
 on_success_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
                                                send_to=Variable.get('TELEGRAM_USER'),

@@ -11,15 +11,16 @@ from airflow.utils.dates import days_ago
 from telegram import TelegramOperator
 
 # Main DAG info
-DAG_NAME = 'sql_version_control'
+DAG_NAME = 'sql_version_control_v1'
 SCHEDULE = None
-DESCRIPTION = 'This DAG is used to control versioning SQL functions and procedures on a giving database.' \
-              'The functions and procedures should be saves on a git repo'
+DESCRIPTION = 'This DAG is used to control versioning SQL functions and procedures on a giving database. ' \
+              'Version 1 - 2 Folders that each contains several .sql files.'
 
 # Constant variables
+VERSION = DAG_NAME.split('_')[-1]
 SQL_MAIN_FOLDER = str(Variable.get('sql_folder_path'))
-SQL_TRUNCATE_FOLDER = f'{SQL_MAIN_FOLDER}/truncate'
-SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/create'
+SQL_TRUNCATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/truncate'
+SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
 
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
                 'email': ['giltober@gmail.com']}
