@@ -13,13 +13,13 @@ from telegram import TelegramOperator
 # Main DAG info
 DAG_NAME = 'sql_version_control_v1'
 SCHEDULE = None
-DESCRIPTION = 'This DAG is used to control versioning SQL functions and procedures on a giving database. ' \
-              'Version 1 - 2 Folders that each contains several .sql files.'
+DESCRIPTION = 'This DAG is used to control versioning sql functions and procedures on a giving database. ' \
+              'Version 1: 2 Folders that each contains several .sql files.'
 
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
 SQL_MAIN_FOLDER = str(Variable.get('sql_folder_path'))
-SQL_TRUNCATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/truncate'
+SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete'
 SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
 
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
@@ -33,17 +33,17 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
 
     dummy = DummyOperator(task_id='dummy')
 
-    for file in os.listdir(SQL_TRUNCATE_FOLDER):
+    for file in os.listdir(SQL_DELETE_FOLDER):
         file_name = file.split('.')[0]
-        truncate_sql = PostgresOperator(task_id=f'truncate_sql_{file_name}', postgres_conn_id='postgres_prod', sql=file,
-                                        autocommit=True)
-        git_pull >> truncate_sql
+        delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod', sql=file,
+                                      autocommit=True)
+        git_pull >> delete_sql
 
     for file in os.listdir(SQL_CREATE_FOLDER):
         file_name = file.split('.')[0]
         create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod', sql=file,
                                       autocommit=True)
-        truncate_sql >> create_sql >> dummy
+        delete_sql >> create_sql >> dummy
 
     on_fail_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
                                                 send_to=Variable.get('TELEGRAM_USER'),
