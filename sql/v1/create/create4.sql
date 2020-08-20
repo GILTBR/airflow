@@ -1,0 +1,7 @@
+CREATE OR REPLACE PROCEDURE prod.pro4()
+    LANGUAGE plpgsql AS
+$$
+BEGIN
+    SELECT 1;
+END;
+$$;
