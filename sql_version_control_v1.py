@@ -23,7 +23,7 @@ SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete'
 SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
 
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
-                'email': ['giltober@gmail.com']}
+                'email': ['giltober@gmail.com'], 'email_on_failure': False}
 
 bash_command = f'cd {SQL_MAIN_FOLDER}; git pull'
 
@@ -36,14 +36,14 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
 
     for file in os.listdir(SQL_DELETE_FOLDER):
         file_name = file.split('.')[0]
-        delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod', sql=file,
-                                      autocommit=True)
+        delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod',
+                                      sql=f'{SQL_DELETE_FOLDER}/{file}', autocommit=True)
         git_pull >> delete_sql >> dummy1
 
     for file in os.listdir(SQL_CREATE_FOLDER):
         file_name = file.split('.')[0]
-        create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod', sql=file,
-                                      autocommit=True)
+        create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod',
+                                      sql=f'{SQL_CREATE_FOLDER}/{file}', autocommit=True)
         dummy1 >> create_sql >> dummy2
 
     on_fail_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
