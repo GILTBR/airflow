@@ -19,8 +19,8 @@ DESCRIPTION = 'This DAG is used to control versioning sql functions and procedur
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
 SQL_MAIN_FOLDER = str(Variable.get('SQL_FOLDER_PATH'))
-SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete/'
-SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create/'
+SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete'
+SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
 
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
                 'email': ['giltober@gmail.com'], 'email_on_failure': False}
@@ -39,6 +39,7 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
         file_name = file.split('.')[0]
         delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod',
                                       sql=f'{SQL_DELETE_FOLDER}/{file}', autocommit=True)
+        print(f'{SQL_DELETE_FOLDER}/{file}')
         git_pull >> delete_sql >> dummy1
 
     for file in os.listdir(SQL_CREATE_FOLDER):
