@@ -19,8 +19,8 @@ DESCRIPTION = 'This DAG is used to control versioning sql functions and procedur
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
 SQL_MAIN_FOLDER = str(Variable.get('SQL_FOLDER_PATH'))
-SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete'
-SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
+SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete/'
+SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create/'
 
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
                 'email': ['giltober@gmail.com'], 'email_on_failure': False}
