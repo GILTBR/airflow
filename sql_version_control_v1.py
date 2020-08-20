@@ -28,7 +28,8 @@ default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_pas
 bash_command = f'cd {SQL_MAIN_FOLDER}; git pull'
 
 with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default_args=default_args,
-         schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60), tags=['git', 'sql']) as dag:
+         schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60), tags=['git', 'sql'],
+         template_searchpath='/home/giltober/airflow/airflow-dags') as dag:
     git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
 
     dummy1 = DummyOperator(task_id='dummy1')
