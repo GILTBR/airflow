@@ -1,0 +1,3 @@
+[submodule "plugins/airflow_telegram_plugin"]
+	path = plugins/airflow_telegram_plugin
+	url = https://github.com/GILTBR/airflow_telegram_plugin.git
