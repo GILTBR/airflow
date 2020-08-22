@@ -49,7 +49,7 @@ def pull_exchange_rate():
                   method='multi')
 
 
-create_table = PostgresOperator(sql='create_table.sql', postgres_conn_id='postgres_prod', autocommit=True,
+create_table = PostgresOperator(sql='/sql/create_table.sql', postgres_conn_id='postgres_prod', autocommit=True,
                                 database='postgres', task_id='create_table', dag=dag)
 
 pull_exchange = PythonOperator(python_callable=pull_exchange_rate, task_id='pull_exchange', dag=dag)
