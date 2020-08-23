@@ -29,7 +29,8 @@ default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_pas
 bash_command = f'cd {SQL_MAIN_FOLDER}; git pull'
 
 with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default_args=default_args,
-         schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60), tags=['git', 'sql']) as dag:
+         template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60),
+         tags=['git', 'sql']) as dag:
     git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
 
     dummy1 = DummyOperator(task_id='dummy1')
@@ -38,20 +39,21 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
     for file in os.listdir(SQL_DELETE_FOLDER):
         file_name = file.split('.')[0]
         delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'../sql/delete/{file}', autocommit=True)
+                                      sql=f'{VERSION}/delete/{file}', autocommit=True)
         git_pull >> delete_sql >> dummy1
 
     for file in os.listdir(SQL_CREATE_FOLDER):
         file_name = file.split('.')[0]
         create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'../sql/{VERSION}/create{file}', autocommit=True)
+                                      sql=f'{VERSION}/create{file}', autocommit=True)
         dummy1 >> create_sql >> dummy2
 
     on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
-                                                message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed',
-                                                task_id='on_fail_telegram_message', trigger_rule='all_failed')
+                                                message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed'
+                                                , task_id='on_fail_telegram_message', trigger_rule='all_failed')
     on_success_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
-                                                   message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} successful',
+                                                   message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} '
+                                                           f'successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
 
 dummy2 >> on_fail_telegram_message
