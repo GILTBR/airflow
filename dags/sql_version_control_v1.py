@@ -38,13 +38,13 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
     for file in os.listdir(SQL_DELETE_FOLDER):
         file_name = file.split('.')[0]
         delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'{SQL_DELETE_FOLDER}/{file}', autocommit=True)
+                                      sql=f'../sql/delete/{file}', autocommit=True)
         git_pull >> delete_sql >> dummy1
 
     for file in os.listdir(SQL_CREATE_FOLDER):
         file_name = file.split('.')[0]
         create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'{SQL_CREATE_FOLDER}/{file}', autocommit=True)
+                                      sql=f'../sql/{VERSION}/create{file}', autocommit=True)
         dummy1 >> create_sql >> dummy2
 
     on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
