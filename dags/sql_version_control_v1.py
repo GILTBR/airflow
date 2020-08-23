@@ -6,9 +6,10 @@ from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
+from plugins.airflow_telegram_plugin.operators.telegram_operator import TelegramOperator
 from airflow.utils.dates import days_ago
 
-from telegram import TelegramOperator
+# from telegram import TelegramOperator
 
 # Main DAG info
 DAG_NAME = 'sql_version_control_v1'
@@ -37,24 +38,20 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
     for file in os.listdir(SQL_DELETE_FOLDER):
         file_name = file.split('.')[0]
         delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'/sql/{VERSION}/delete/{file}', autocommit=True)
+                                      sql=f'/SQL_DELETE_FOLDER/{VERSION}/delete/{file}', autocommit=True)
         git_pull >> delete_sql >> dummy1
 
     for file in os.listdir(SQL_CREATE_FOLDER):
         file_name = file.split('.')[0]
         create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'/sql/{VERSION}/create/{file}', autocommit=True)
+                                      sql=f'/SQL_CREATE_FOLDER/{VERSION}/create/{file}', autocommit=True)
         dummy1 >> create_sql >> dummy2
 
-    on_fail_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
-                                                send_to=Variable.get('TELEGRAM_USER'),
-                                                msg=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed',
+    on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_token',
+                                                message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed',
                                                 task_id='on_fail_telegram_message', trigger_rule='all_failed')
-
-    on_success_telegram_message = TelegramOperator(bot_token=str(Variable.get('TELEGRAM_TOKEN')),
-                                                   send_to=Variable.get('TELEGRAM_USER'),
-                                                   msg=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} '
-                                                       f'successful',
+    on_success_telegram_message = TelegramOperator(telegram_conn_id='telegram_token',
+                                                   message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
 
 dummy2 >> on_fail_telegram_message
