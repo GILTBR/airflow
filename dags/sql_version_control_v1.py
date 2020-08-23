@@ -6,7 +6,7 @@ from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
-from plugins.airflow_telegram_plugin.operators.telegram_operator import TelegramOperator
+from airflow.operators.telegram_plugin import TelegramOperator
 from airflow.utils.dates import days_ago
 
 # from telegram import TelegramOperator
@@ -38,13 +38,13 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
     for file in os.listdir(SQL_DELETE_FOLDER):
         file_name = file.split('.')[0]
         delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'/SQL_DELETE_FOLDER/{VERSION}/delete/{file}', autocommit=True)
+                                      sql=f'/{SQL_DELETE_FOLDER}/{VERSION}/delete/{file}', autocommit=True)
         git_pull >> delete_sql >> dummy1
 
     for file in os.listdir(SQL_CREATE_FOLDER):
         file_name = file.split('.')[0]
         create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'/SQL_CREATE_FOLDER/{VERSION}/create/{file}', autocommit=True)
+                                      sql=f'/{SQL_CREATE_FOLDER}/{VERSION}/create/{file}', autocommit=True)
         dummy1 >> create_sql >> dummy2
 
     on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_token',
