@@ -38,19 +38,19 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
     for file in os.listdir(SQL_DELETE_FOLDER):
         file_name = file.split('.')[0]
         delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'/{SQL_DELETE_FOLDER}/{VERSION}/delete/{file}', autocommit=True)
+                                      sql=f'{SQL_DELETE_FOLDER}/{file}', autocommit=True)
         git_pull >> delete_sql >> dummy1
 
     for file in os.listdir(SQL_CREATE_FOLDER):
         file_name = file.split('.')[0]
         create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='postgres_prod',
-                                      sql=f'/{SQL_CREATE_FOLDER}/{VERSION}/create/{file}', autocommit=True)
+                                      sql=f'{SQL_CREATE_FOLDER}/{file}', autocommit=True)
         dummy1 >> create_sql >> dummy2
 
-    on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_token',
+    on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
                                                 message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed',
                                                 task_id='on_fail_telegram_message', trigger_rule='all_failed')
-    on_success_telegram_message = TelegramOperator(telegram_conn_id='telegram_token',
+    on_success_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
                                                    message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
 
