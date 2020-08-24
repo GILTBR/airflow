@@ -32,13 +32,11 @@ git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
 dummy1 = DummyOperator(task_id='dummy1')
 dummy2 = DummyOperator(task_id='dummy2')
 
-for db_conn in conns:
-
-    with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default_args=default_args,
-             template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=SCHEDULE,
-             dagrun_timeout=dt.timedelta(minutes=60),
-             tags=['git', 'sql']) as dag:
-
+with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default_args=default_args,
+         template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=SCHEDULE,
+         dagrun_timeout=dt.timedelta(minutes=60),
+         tags=['git', 'sql']) as dag:
+    for db_conn in conns:
         dummy3 = DummyOperator(task_id='dummy3')
         dummy4 = DummyOperator(task_id='dummy4')
 
@@ -61,7 +59,7 @@ on_success_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_i
                                                message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} '
                                                        f'successful',
                                                task_id='on_success_telegram_message', trigger_rule='all_success')
-git_pull >> dummy1
+
 dummy4 >> dummy2
 dummy2 >> on_fail_telegram_message
 dummy2 >> on_success_telegram_message
