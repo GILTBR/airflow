@@ -10,10 +10,10 @@ from airflow.operators.telegram_plugin import TelegramOperator
 from airflow.utils.dates import days_ago
 
 # Main DAG info
-DAG_NAME = 'sql_version_control_v1'
+DAG_NAME = 'sql_version_control_v3'
 SCHEDULE = None
 DESCRIPTION = 'This DAG is used to control versioning sql functions and procedures on a giving database. ' \
-              'Version 1: 2 Folders that each contains several .sql files.'
+              'Version 3: 1 Dag with multiple DBs and 2 Folders that each contains several .sql files.'
 
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
@@ -33,7 +33,6 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
          template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=SCHEDULE,
          dagrun_timeout=dt.timedelta(minutes=60),
          tags=['git', 'sql']) as dag:
-
     git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
     dummy1 = DummyOperator(task_id='dummy1')
     dummy2 = DummyOperator(task_id='dummy2')
