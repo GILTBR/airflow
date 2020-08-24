@@ -24,7 +24,7 @@ SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
 bash_command = f'cd {SQL_MAIN_FOLDER}; git pull'
 
 
-def create_dag(f_dag_id, f_schedule, f_default_args):
+def create_dag(f_dag_id, f_schedule, f_default_args, f_conn_id):
     with DAG(dag_id=f_dag_id, description=DESCRIPTION, default_view='graph', default_args=f_default_args,
              template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=f_schedule,
              dagrun_timeout=dt.timedelta(minutes=60),
@@ -37,13 +37,13 @@ def create_dag(f_dag_id, f_schedule, f_default_args):
 
         for file in os.listdir(SQL_DELETE_FOLDER):
             file_name = file.split('.')[0]
-            delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id='db_conn',
+            delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id=f_conn_id,
                                           sql=f'{VERSION}/delete/{file}', autocommit=True)
             git_pull >> delete_sql >> dummy1
 
         for file in os.listdir(SQL_CREATE_FOLDER):
             file_name = file.split('.')[0]
-            create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id='db_conn',
+            create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id=f_conn_id,
                                           sql=f'{VERSION}/create/{file}', autocommit=True)
             dummy1 >> create_sql >> dummy2
 
@@ -69,4 +69,4 @@ for db_conn in conns:
     default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
                     'email': ['giltober@gmail.com'], 'email_on_failure': False}
     schedule = SCHEDULE
-    globals()[dag_id] = create_dag(dag_id, schedule, default_args)
+    globals()[dag_id] = create_dag(dag_id, schedule, default_args, db_conn)
