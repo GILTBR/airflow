@@ -54,13 +54,13 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
                                           sql=f'{VERSION}/create/{file}', autocommit=True)
             dummy3 >> create_sql >> dummy4
 
-on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
-                                            message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed'
-                                            , task_id='on_fail_telegram_message', trigger_rule='all_failed')
-on_success_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
-                                               message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} '
-                                                       f'successful',
-                                               task_id='on_success_telegram_message', trigger_rule='all_success')
+    on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
+                                                message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed'
+                                                , task_id='on_fail_telegram_message', trigger_rule='all_failed')
+    on_success_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
+                                                   message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} '
+                                                           f'successful',
+                                                   task_id='on_success_telegram_message', trigger_rule='all_success')
 
 dummy4 >> dummy2
 dummy2 >> on_fail_telegram_message
