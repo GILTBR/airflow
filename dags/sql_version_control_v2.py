@@ -1,21 +1,19 @@
 import datetime as dt
 import os
 
-from airflow.models import DAG
-from airflow.models import Variable
+from airflow import DAG, settings
+from airflow.models import Variable, Connection
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.telegram_plugin import TelegramOperator
 from airflow.utils.dates import days_ago
 
-# from telegram import TelegramOperator
-
 # Main DAG info
 DAG_NAME = 'sql_version_control_v2'
 SCHEDULE = None
 DESCRIPTION = 'This DAG is used to control versioning sql functions and procedures on a giving database. ' \
-              'Version 1: 2 Folders that each contains several .sql files.'
+              'Version 2: several DBs and 2 Folders that each contains several .sql files.'
 
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
@@ -28,12 +26,16 @@ default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_pas
 
 bash_command = f'cd {SQL_MAIN_FOLDER}; git pull'
 
-for db_conn in Variable.get('DB_URLS').split(','):
+session = settings.Session()
+conns = (session.query(Connection.conn_id).filter(Connection.conn_id.ilike('db_%')).all())
 
-    with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default_args=default_args,
+for db_conn in conns:
+
+    with DAG(dag_id=f'{DAG_NAME}_{db_conn}', description=DESCRIPTION, default_view='graph', default_args=default_args,
              template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=SCHEDULE,
              dagrun_timeout=dt.timedelta(minutes=60),
              tags=['git', 'sql']) as dag:
+
         git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
 
         dummy1 = DummyOperator(task_id='dummy1')
