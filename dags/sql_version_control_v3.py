@@ -37,8 +37,8 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
     dummy1 = DummyOperator(task_id='dummy1')
     dummy2 = DummyOperator(task_id='dummy2')
 
-    git_pull >> dummy1
     for db_conn in conns:
+        git_pull >> dummy1
         dummy3 = DummyOperator(task_id='dummy3')
         dummy4 = DummyOperator(task_id='dummy4')
 
@@ -62,8 +62,8 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
                                                            f'successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
 
-    dummy4 >> dummy2
-    dummy2 >> on_fail_telegram_message
-    dummy2 >> on_success_telegram_message
+dummy4 >> dummy2
+dummy2 >> on_fail_telegram_message
+dummy2 >> on_success_telegram_message
 if __name__ == "__main__":
     dag.cli()
