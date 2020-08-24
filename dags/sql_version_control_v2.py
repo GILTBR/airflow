@@ -37,13 +37,13 @@ def create_dag(f_dag_id, f_schedule, f_default_args, f_conn_id):
 
         for file in os.listdir(SQL_DELETE_FOLDER):
             file_name = file.split('.')[0]
-            delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id=f_conn_id,
+            delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id=str(f_conn_id),
                                           sql=f'{VERSION}/delete/{file}', autocommit=True)
             git_pull >> delete_sql >> dummy1
 
         for file in os.listdir(SQL_CREATE_FOLDER):
             file_name = file.split('.')[0]
-            create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id=f_conn_id,
+            create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id=str(f_conn_id),
                                           sql=f'{VERSION}/create/{file}', autocommit=True)
             dummy1 >> create_sql >> dummy2
 
