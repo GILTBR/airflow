@@ -28,14 +28,16 @@ bash_command = f'cd {SQL_MAIN_FOLDER}; git pull'
 
 session = settings.Session()
 conns = (session.query(Connection.conn_id).filter(Connection.conn_id.like('db_%')).all())
-git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
-dummy1 = DummyOperator(task_id='dummy1')
-dummy2 = DummyOperator(task_id='dummy2')
 
 with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default_args=default_args,
          template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=SCHEDULE,
          dagrun_timeout=dt.timedelta(minutes=60),
          tags=['git', 'sql']) as dag:
+
+    git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
+    dummy1 = DummyOperator(task_id='dummy1')
+    dummy2 = DummyOperator(task_id='dummy2')
+
     for db_conn in conns:
         dummy3 = DummyOperator(task_id='dummy3')
         dummy4 = DummyOperator(task_id='dummy4')
