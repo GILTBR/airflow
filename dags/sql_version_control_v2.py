@@ -21,18 +21,12 @@ SQL_MAIN_FOLDER = str(Variable.get('SQL_FOLDER_PATH'))
 SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete'
 SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
 
-default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
-                'email': ['giltober@gmail.com'], 'email_on_failure': False}
-
 bash_command = f'cd {SQL_MAIN_FOLDER}; git pull'
 
-session = settings.Session()
-conns = (session.query(Connection.conn_id).filter(Connection.conn_id.ilike('db_%')).all())
 
-for db_conn in conns:
-
-    with DAG(dag_id=f'{DAG_NAME}_{db_conn}', description=DESCRIPTION, default_view='graph', default_args=default_args,
-             template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=SCHEDULE,
+def create_dag(f_dag_id, f_schedule, f_default_args):
+    with DAG(dag_id=f_dag_id, description=DESCRIPTION, default_view='graph', default_args=f_default_args,
+             template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=f_schedule,
              dagrun_timeout=dt.timedelta(minutes=60),
              tags=['git', 'sql']) as dag:
 
@@ -64,5 +58,15 @@ for db_conn in conns:
 
     dummy2 >> on_fail_telegram_message
     dummy2 >> on_success_telegram_message
-if __name__ == "__main__":
-    dag.cli()
+    return dag
+
+
+session = settings.Session()
+conns = (session.query(Connection.conn_id).filter(Connection.conn_id.like('db_%')).all())
+
+for db_conn in conns:
+    dag_id = f'{DAG_NAME}_{db_conn[0]}'
+    default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
+                    'email': ['giltober@gmail.com'], 'email_on_failure': False}
+    schedule = SCHEDULE
+    globals()[dag_id] = create_dag(dag_id, schedule, default_args)
