@@ -23,6 +23,29 @@ SQL_MAIN_FOLDER = str(Variable.get('SQL_FOLDER_PATH'))
 SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete'
 SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
 
+
+def on_success_callback_telegram(context):
+    success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success',
+                                     message=f""":white_check_mark: Task successful!
+                                                *DAG*: {context.get('task_instance').dag_id}
+                                                *Task*: {context.get('task_instance').task_id}
+                                                *Execution Time*: {context.get('execution_date')}
+                                                *Log URL*: {context.get('task_instance').log_url}
+                                                """)
+    return success_alert.execute(context=context)
+
+
+def on_failure_callback_telegram(context):
+    failed_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_failed',
+                                    message=f""":x: Task Failed!
+                                                *DAG*: {context.get('task_instance').dag_id}
+                                                *Task*: {context.get('task_instance').task_id}
+                                                *Execution Time*: {context.get('execution_date')}
+                                                *Log URL*: {context.get('task_instance').log_url}
+                                                """)
+    return failed_alert.execute(context=context)
+
+
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
                 'email': ['giltober@gmail.com'], 'email_on_failure': False}
 
@@ -30,7 +53,8 @@ bash_command = f'cd {SQL_MAIN_FOLDER}; git pull'
 
 with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default_args=default_args,
          template_searchpath=f'{SQL_MAIN_FOLDER}', schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60),
-         tags=['git', 'sql']) as dag:
+         tags=['git', 'sql'], on_failure_callback=on_failure_callback_telegram,
+         on_success_callback=on_success_callback_telegram) as dag:
     git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
 
     dummy1 = DummyOperator(task_id='dummy1')
@@ -58,5 +82,6 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
 
 dummy2 >> on_fail_telegram_message
 dummy2 >> on_success_telegram_message
+
 if __name__ == "__main__":
     dag.cli()
