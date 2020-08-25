@@ -1,6 +1,7 @@
 import datetime as dt
 import os
 
+import pendulum
 from airflow.models import DAG
 from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
@@ -22,14 +23,15 @@ VERSION = DAG_NAME.split('_')[-1]
 SQL_MAIN_FOLDER = str(Variable.get('SQL_FOLDER_PATH'))
 SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete'
 SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
+LOCAL_TZ = pendulum.timezone('Asia/Jerusalem')
 
 
 def on_success_callback_telegram(context):
     success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success',
-                                     message=f" :white_check_mark DAG successful!\n"
-                                             f"DAG: {context.get('task_instance').dag_id}\n"
-                                             f"Execution Time: {context.get('execution_date').replace(microsecond=0)}\n"
-                                             f"Log URL: {context.get('task_instance').log_url}")
+                                     message=f":white_check_mark *DAG successful!*\n"
+                                             f"*DAG*: {context.get('task_instance').dag_id}\n"
+                                             f"*Execution Time*: {context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n"
+                                             f"*Log URL*: [Log]({context.get('task_instance').log_url})")
     return success_alert.execute(context=context)
 
 
@@ -38,7 +40,7 @@ def on_failure_callback_telegram(context):
                                     message=f" :x Task Failed!\n"
                                             f"DAG: {context.get('task_instance').dag_id}\n"
                                             f"Task: {context.get('task_instance').task_id}\n"
-                                            f"Execution Time: {context.get('execution_date').replace(microsecond=0)}\n"
+                                            f"Execution Time: {context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n"
                                             f"Log URL: {context.get('task_instance').log_url}")
     return failed_alert.execute(context=context)
 
@@ -70,15 +72,15 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
         dummy1 >> create_sql >> dummy2
 
     on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
-                                                message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed'
+                                                message=f'{dt.datetime.now().replace(microsecond=0, tzinfo=LOCAL_TZ)}: {DAG_NAME} failed'
                                                 , task_id='on_fail_telegram_message', trigger_rule='all_failed')
     on_success_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
-                                                   message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} '
+                                                   message=f'{dt.datetime.now().replace(microsecond=0, tzinfo=LOCAL_TZ)}: {DAG_NAME} '
                                                            f'successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
 
-dummy2 >> on_fail_telegram_message
-dummy2 >> on_success_telegram_message
+    dummy2 >> on_fail_telegram_message
+    dummy2 >> on_success_telegram_message
 
-if __name__ == "__main__":
-    dag.cli()
+    if __name__ == "__main__":
+        dag.cli()
