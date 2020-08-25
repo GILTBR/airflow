@@ -26,23 +26,20 @@ SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
 
 def on_success_callback_telegram(context):
     success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success',
-                                     message=f""":white_check_mark DAG successful!\n
-                                                DAG: {context.get('task_instance').dag_id}\n
-                                                Task: {context.get('task_instance').task_id}\n
-                                                Execution Time: {context.get('execution_date').replace(microsecond=0)}\n
-                                                Log URL: {context.get('task_instance').log_url}
-                                                """)
+                                     message=f" :white_check_mark DAG successful!\n"
+                                             f"DAG: {context.get('task_instance').dag_id}\n"
+                                             f"Execution Time: {context.get('execution_date').replace(microsecond=0)}\n"
+                                             f"Log URL: {context.get('task_instance').log_url}")
     return success_alert.execute(context=context)
 
 
 def on_failure_callback_telegram(context):
     failed_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_failed',
-                                    message=f""":x Task Failed!\n
-                                                DAG: {context.get('task_instance').dag_id}\n
-                                                Task: {context.get('task_instance').task_id}\n
-                                                Execution Time: {context.get('execution_date').replace(microsecond=0)}\n
-                                                Log URL: {context.get('task_instance').log_url}
-                                                """)
+                                    message=f" :x Task Failed!\n"
+                                            f"DAG: {context.get('task_instance').dag_id}\n"
+                                            f"Task: {context.get('task_instance').task_id}\n"
+                                            f"Execution Time: {context.get('execution_date').replace(microsecond=0)}\n"
+                                            f"Log URL: {context.get('task_instance').log_url}")
     return failed_alert.execute(context=context)
 
 
