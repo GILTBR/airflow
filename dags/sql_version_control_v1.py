@@ -68,8 +68,7 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
                                                 message=f'{dt.datetime.now().replace(microsecond=0, tzinfo=LOCAL_TZ)}: {DAG_NAME} failed'
                                                 , task_id='on_fail_telegram_message', trigger_rule='all_failed')
     on_success_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
-                                                   message=f'{dt.datetime.now().replace(microsecond=0, tzinfo=LOCAL_TZ)}: {DAG_NAME} '
-                                                           f'successful',
+                                                   message=f'{dt.datetime.now().replace(microsecond=0, tzinfo=LOCAL_TZ)}: {DAG_NAME} successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
 
     dummy2 >> on_fail_telegram_message
