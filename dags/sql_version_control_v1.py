@@ -28,13 +28,15 @@ LOCAL_TZ = pendulum.timezone('Asia/Jerusalem')
 
 def on_success_callback_telegram(context):
     message = f"\U00002705 *DAG successful!*\n*DAG*: {context.get('task_instance').dag_id}\n*Execution Time*: {context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n*Log URL*: [{context.get('task_instance').log_url}]"
-    success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success', message=message)
+    success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success',
+                                     message=message.replace('_', '\\_'))
     return success_alert.execute(context=context)
 
 
 def on_failure_callback_telegram(context):
+    message = f"\U0000274C *Task Failed!*\n*DAG:* {context.get('task_instance').dag_id}\n*Task:* {context.get('task_instance').task_id}\n*Execution Time:* {context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n*Log URL:* [{context.get('task_instance').log_url}]"
     failed_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_failed',
-                                    message=f"\U0000274C *Task Failed!*\n*DAG:* {context.get('task_instance').dag_id}\n*Task:* {context.get('task_instance').task_id}\n*Execution Time:* {context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n*Log URL:* [{context.get('task_instance').log_url}]")
+                                    message=message.replace('_', '\\_'))
     return failed_alert.execute(context=context)
 
 
