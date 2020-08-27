@@ -27,9 +27,9 @@ LOCAL_TZ = pendulum.timezone('Asia/Jerusalem')
 
 
 def on_success_callback_telegram(context):
-    message = f"\U00002705 *DAG successful!*\n*DAG*: {context.get('task_instance').dag_id}\n*Execution Time*: {context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n*Log URL*: [{context.get('task_instance').log_url}]"
+    message = f"\U00002705 <b>DAG successful!</b>\n<b>DAG</b>: {context.get('task_instance').dag_id}\n<b>Execution Time</b>: {context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n<b>Log URL</b>: {context.get('task_instance').log_url}"
     success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success',
-                                     message=message.replace('_', '\\_'))
+                                     message=message)
     return success_alert.execute(context=context)
 
 
