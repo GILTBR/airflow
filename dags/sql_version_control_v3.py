@@ -46,7 +46,7 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
 
         for file in os.listdir(SQL_FUNCTIONS_FOLDER):
             file_name = file.split('.')[0]
-            sql_function = PostgresOperator(task_id=f'sql_({db_conn[0]})_{file_name}', postgres_conn_id=db_conn[0],
+            sql_function = PostgresOperator(task_id=f'sql_{db_conn[0]}_{file_name}', postgres_conn_id=db_conn[0],
                                             sql=f'{VERSION}/{file}', autocommit=True)
             dummy_db_start >> sql_function >> dummy_db_end
 
