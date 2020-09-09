@@ -1,6 +1,7 @@
 import datetime as dt
 import os
 
+import pendulum
 from airflow import DAG, settings
 from airflow.models import Variable, Connection
 from airflow.operators.bash_operator import BashOperator
@@ -18,8 +19,8 @@ DESCRIPTION = 'This DAG is used to control versioning sql functions and procedur
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
 SQL_MAIN_FOLDER = str(Variable.get('SQL_FOLDER_PATH'))
-SQL_DELETE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/delete'
-SQL_CREATE_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}/create'
+SQL_FUNCTIONS_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}'
+LOCAL_TZ = pendulum.timezone('Asia/Jerusalem')
 
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
                 'email': ['giltober@gmail.com'], 'email_on_failure': False}
@@ -42,17 +43,11 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
         dummy3 = DummyOperator(task_id='dummy3')
         dummy4 = DummyOperator(task_id='dummy4')
 
-        for file in os.listdir(SQL_DELETE_FOLDER):
+        for file in os.listdir(SQL_FUNCTIONS_FOLDER):
             file_name = file.split('.')[0]
-            delete_sql = PostgresOperator(task_id=f'delete_sql_{file_name}', postgres_conn_id=db_conn[0],
+            delete_sql = PostgresOperator(task_id=f'sql_({db_conn[0]})_{file_name}', postgres_conn_id=db_conn[0],
                                           sql=f'{VERSION}/delete/{file}', autocommit=True)
             dummy1 >> delete_sql >> dummy3
-
-        for file in os.listdir(SQL_CREATE_FOLDER):
-            file_name = file.split('.')[0]
-            create_sql = PostgresOperator(task_id=f'create_sql_{file_name}', postgres_conn_id=db_conn[0],
-                                          sql=f'{VERSION}/create/{file}', autocommit=True)
-            dummy3 >> create_sql >> dummy4
 
     on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
                                                 message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed'
@@ -62,7 +57,7 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
                                                            f'successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
 
-dummy4 >> dummy2
+dummy3 >> dummy2
 dummy2 >> on_fail_telegram_message
 dummy2 >> on_success_telegram_message
 if __name__ == "__main__":
