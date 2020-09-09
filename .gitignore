@@ -4,3 +4,6 @@ __pycache__/
 .env
 /venv/
 /tests/
+/airflow.cfg
+/airflow.db
+/unittests.cfg

@@ -1,3 +1,8 @@
+DROP FUNCTION IF EXISTS prod.pro1();
+
+COMMIT;
+
+
 CREATE OR REPLACE PROCEDURE prod.pro1()
     LANGUAGE plpgsql AS
 $$
@@ -5,3 +10,5 @@ BEGIN
     SELECT 1;
 END;
 $$;
+
+COMMIT;
