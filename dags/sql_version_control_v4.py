@@ -28,7 +28,7 @@ default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_pas
 
 repo = Repo()
 full_diff = repo.git.diff('HEAD~1..HEAD', name_only=True).split('\n')
-diff_files = [file.replace(f'sql/{VERSION}', '') for file in full_diff if file.startswith(f'sql/{VERSION}')]
+diff_files = [file.replace(f'sql/{VERSION}/', '') for file in full_diff if file.startswith(f'sql/{VERSION}')]
 
 
 def on_success_callback_telegram(context):
