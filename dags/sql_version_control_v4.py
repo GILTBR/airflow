@@ -1,8 +1,8 @@
 import datetime as dt
 
 import pendulum
-from airflow.models import DAG
-from airflow.models import Variable
+from airflow import DAG, settings
+from airflow.models import Variable, Connection
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
@@ -13,7 +13,7 @@ from git import Repo
 # Main DAG info
 DAG_NAME = 'sql_version_control_v4'
 SCHEDULE = None
-DESCRIPTION = 'Version 1: Creates a connection to a single DB, dynamically creates tasks based on the SQL files folder.'
+DESCRIPTION = ''
 
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
@@ -43,6 +43,9 @@ def on_failure_callback_telegram(context):
     return failed_alert.execute(context=context)
 
 
+session = settings.Session()
+conns = (session.query(Connection.conn_id).filter(Connection.conn_id.like('db_%')).all())
+
 # Main DAG creation
 with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, template_searchpath=f'{SQL_MAIN_FOLDER}',
          schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60),
@@ -60,15 +63,18 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
 
     git_pull >> dummy_start
 
-    # Loop over the SQL files folder to create tasks
-    # On failure send telegram message
-    for file in diff_files:
-        file_name = file.split('.')[0]
-        sql_function = PostgresOperator(task_id=f'sql_{file_name}', postgres_conn_id='postgres_prod',
-                                        sql=f'{VERSION}/{file}', autocommit=True,
-                                        on_failure_callback=on_failure_callback_telegram)
+    for db_conn in conns:
+        dummy_db_start = DummyOperator(task_id=f'dummy_start_{db_conn[0]}')
+        dummy_db_end = DummyOperator(task_id=f'dummy_end_{db_conn[0]}')
+        dummy_start >> dummy_db_start
 
-        dummy_start >> sql_function >> dummy_end
+        for file in diff_files:
+            file_name = file.split('.')[0]
+            sql_function = PostgresOperator(task_id=f'sql_{db_conn[0]}_{file_name}', postgres_conn_id=db_conn[0],
+                                            sql=f'{VERSION}/{file}', autocommit=True)
+            dummy_db_start >> sql_function >> dummy_db_end
 
-    if __name__ == "__main__":
-        dag.cli()
+        dummy_db_end >> dummy_end
+
+if __name__ == "__main__":
+    dag.cli()
