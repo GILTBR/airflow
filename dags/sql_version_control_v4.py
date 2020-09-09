@@ -1,5 +1,4 @@
 import datetime as dt
-import os
 
 import pendulum
 from airflow.models import DAG
@@ -26,10 +25,6 @@ LOCAL_TZ = pendulum.timezone('Asia/Jerusalem')
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
                 'email': ['giltober@gmail.com'], 'email_on_failure': False}
 
-repo = Repo()
-full_diff = repo.git.diff('HEAD~1..HEAD', name_only=True).split('\n')
-diff_files = [file.replace(f'sql/{VERSION}/', '') for file in full_diff if file.startswith(f'sql/{VERSION}')]
-
 
 def on_success_callback_telegram(context):
     message = f"\U00002705 DAG successful!\nDAG: {context.get('task_instance').dag_id}\nExecution Time: " \
@@ -52,6 +47,10 @@ def on_failure_callback_telegram(context):
 with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, template_searchpath=f'{SQL_MAIN_FOLDER}',
          schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60),
          on_failure_callback=on_failure_callback_telegram, on_success_callback=on_success_callback_telegram) as dag:
+    repo = Repo()
+    full_diff = repo.git.diff('HEAD~1..HEAD', name_only=True).split('\n')
+    diff_files = [file.replace(f'sql/{VERSION}/', '') for file in full_diff if file.startswith(f'sql/{VERSION}')]
+
     # On failure send telegram message
     git_pull = BashOperator(task_id='git_pull', bash_command=f'cd {SQL_MAIN_FOLDER}; git pull',
                             on_failure_callback=on_failure_callback_telegram)
