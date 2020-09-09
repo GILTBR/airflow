@@ -1,0 +1,14 @@
+DROP PROCEDURE IF EXISTS prod.pro2();
+
+COMMIT;
+
+
+CREATE OR REPLACE PROCEDURE prod.pro2()
+    LANGUAGE plpgsql AS
+$$
+BEGIN
+    SELECT 1;
+END;
+$$;
+
+COMMIT;
