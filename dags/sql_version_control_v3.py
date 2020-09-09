@@ -35,19 +35,22 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
          dagrun_timeout=dt.timedelta(minutes=60),
          tags=['git', 'sql']) as dag:
     git_pull = BashOperator(task_id='git_pull', bash_command=bash_command)
-    dummy1 = DummyOperator(task_id='dummy1')
-    dummy2 = DummyOperator(task_id='dummy2')
+    dummy_start = DummyOperator(task_id='dummy_start')
+    dummy_end = DummyOperator(task_id='dummy_end')
+    git_pull >> dummy_start
 
     for db_conn in conns:
-        git_pull >> dummy1
-        dummy3 = DummyOperator(task_id='dummy3')
-        dummy4 = DummyOperator(task_id='dummy4')
+        dummy_db_start = DummyOperator(task_id=f'dummy_start_{db_conn[0]}')
+        dummy_db_end = DummyOperator(task_id=f'dummy_end_{db_conn[0]}')
+        dummy_start >> dummy_db_start
 
         for file in os.listdir(SQL_FUNCTIONS_FOLDER):
             file_name = file.split('.')[0]
-            delete_sql = PostgresOperator(task_id=f'sql_({db_conn[0]})_{file_name}', postgres_conn_id=db_conn[0],
-                                          sql=f'{VERSION}/delete/{file}', autocommit=True)
-            dummy1 >> delete_sql >> dummy3
+            sql_function = PostgresOperator(task_id=f'sql_({db_conn[0]})_{file_name}', postgres_conn_id=db_conn[0],
+                                            sql=f'{VERSION}/{file}', autocommit=True)
+            dummy_db_start >> sql_function >> dummy_db_end
+
+        dummy_db_end >> dummy_end
 
     on_fail_telegram_message = TelegramOperator(telegram_conn_id='telegram_conn_id',
                                                 message=f'{dt.datetime.now().replace(microsecond=0)}: {DAG_NAME} failed'
@@ -57,8 +60,7 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_view='graph', default
                                                            f'successful',
                                                    task_id='on_success_telegram_message', trigger_rule='all_success')
 
-dummy3 >> dummy2
-dummy2 >> on_fail_telegram_message
-dummy2 >> on_success_telegram_message
+dummy_end >> on_fail_telegram_message
+dummy_end >> on_success_telegram_message
 if __name__ == "__main__":
     dag.cli()
