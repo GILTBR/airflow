@@ -69,19 +69,13 @@ def create_dag(f_dag_id, f_schedule, f_default_args, f_conn_id):
     return dag
 
 
-def dynamic_dag_creation():
-    # Create session to Airflow DB to get connections available
-    global default_args
-    session = settings.Session()
-    connections = (session.query(Connection.conn_id).filter(Connection.conn_id.like('db_%')).all())
+# Create session to Airflow DB to get connections available
+session = settings.Session()
+connections = (session.query(Connection.conn_id).filter(Connection.conn_id.like('db_%')).all())
 
-    # dynamically create DAGs based on connections
-    for db_conn in connections:
-        dag_id = f'{DAG_NAME}_{db_conn[0]}'
-        default_args = default_args
-        schedule = SCHEDULE
-        globals()[dag_id] = create_dag(dag_id, schedule, default_args, db_conn)
-
-
-if __name__ == "__main__":
-    dynamic_dag_creation()
+# dynamically create DAGs based on connections
+for db_conn in connections:
+    dag_id = f'{DAG_NAME}_{db_conn[0]}'
+    default_args = default_args
+    schedule = SCHEDULE
+    globals()[dag_id] = create_dag(dag_id, schedule, default_args, db_conn)
