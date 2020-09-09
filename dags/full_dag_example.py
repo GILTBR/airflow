@@ -9,7 +9,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 from sqlalchemy import create_engine
 
-from .telegram import TelegramOperator
+from telegram import TelegramOperator
 
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2),
                 'depends_on_past': False,

@@ -54,6 +54,8 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
     dummy_start = DummyOperator(task_id='dummy_start')
     dummy_end = DummyOperator(task_id='dummy_end')
 
+    git_pull >> dummy_start
+
     # Loop over the SQL files folder to create tasks
     # On failure send telegram message
     for file in os.listdir(SQL_FUNCTIONS_FOLDER):
@@ -62,7 +64,7 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
                                         sql=f'{VERSION}/{file}', autocommit=True,
                                         on_failure_callback=on_failure_callback_telegram)
 
-        git_pull >> sql_function >> dummy_end
+        dummy_start >> sql_function >> dummy_end
 
     if __name__ == "__main__":
         dag.cli()
