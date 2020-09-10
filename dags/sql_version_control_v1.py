@@ -27,9 +27,9 @@ default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_pas
 
 
 def on_success_callback_telegram(context):
-    message = f"\U00002705 DAG successful!\nDAG: {context.get('task_instance').dag_id}\nExecution Time: " \
+    message = f"\U00002705 *DAG successful*!\nDAG: {context.get('task_instance').dag_id}\nExecution Time: " \
               f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\nLog URL:\n" \
-              f"{context.get('task_instance').log_url}"
+              f"({context.get('task_instance').log_url})"
     success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success', message=message)
     return success_alert.execute(context=context)
 
