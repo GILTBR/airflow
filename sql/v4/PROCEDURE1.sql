@@ -7,7 +7,7 @@ CREATE OR REPLACE PROCEDURE prod.pro1()
     LANGUAGE plpgsql AS
 $$
 BEGIN
-    SELECT 'TEST';
+    SELECT 'TEST11';
 END;
 $$;
 
