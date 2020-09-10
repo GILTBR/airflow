@@ -66,5 +66,9 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
 
         dummy_start >> sql_function >> dummy_end
 
+    telegram_success = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success',
+                                        message='*bold test* www.google.com')
+    dummy_end >> telegram_success
+
     if __name__ == "__main__":
         dag.cli()
