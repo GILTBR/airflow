@@ -31,7 +31,6 @@ def on_success_callback_telegram(context):
               f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\nLog URL:\n" \
               f"({context.get('task_instance').log_url})"
     success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success', message=message)
-    return success_alert.execute(context=context)
 
 
 def on_failure_callback_telegram(context):
@@ -40,7 +39,6 @@ def on_failure_callback_telegram(context):
               f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\nLog URL:\n" \
               f"{context.get('task_instance').log_url}"
     failed_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_failed', message=message)
-    return failed_alert.execute(context=context)
 
 
 # Main DAG creation
@@ -67,7 +65,7 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
         dummy_start >> sql_function >> dummy_end
 
     telegram_success = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success',
-                                        message='*bold test* www.google.com')
+                                        message='*bold ttttttttest* www.google.com')
     dummy_end >> telegram_success
 
     if __name__ == "__main__":
