@@ -50,7 +50,7 @@ conns = (session.query(Connection.conn_id).filter(Connection.conn_id.like('db_%'
 with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, template_searchpath=f'{SQL_MAIN_FOLDER}',
          schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60),
          on_failure_callback=on_failure_callback_telegram, on_success_callback=on_success_callback_telegram) as dag:
-    repo = Repo()
+    repo = Repo(path='/home/giltober/airflow/airflow-dags')
     full_diff = repo.git.diff('HEAD~1..HEAD', name_only=True).split('\n')
     diff_files = [file.replace(f'sql/{VERSION}/', '') for file in full_diff if file.startswith(f'sql/{VERSION}')]
 
