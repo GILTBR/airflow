@@ -13,7 +13,7 @@ from airflow.utils.dates import days_ago
 # Main DAG info
 DAG_NAME = 'sql_version_control_v2'
 SCHEDULE = None
-DESCRIPTION = 'Version 2: Dynamically create DAGs based on the number of connections that meat the criteria'
+DESCRIPTION = 'Version 2: Dynamically create DAGs based on the number of connections that meet the criteria'
 
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]

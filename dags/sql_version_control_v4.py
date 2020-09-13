@@ -13,7 +13,8 @@ from git import Repo
 # Main DAG info
 DAG_NAME = 'sql_version_control_v4'
 SCHEDULE = None
-DESCRIPTION = ''
+DESCRIPTION = 'Version 4: Dynamically split the DAG based on the number of connection. Dynamically creates SQL ' \
+              'tasks based on the files the were changed in the last commit'
 
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
