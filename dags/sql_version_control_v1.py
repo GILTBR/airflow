@@ -27,9 +27,9 @@ default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_pas
 
 
 def on_success_callback_telegram(context):
-    message = f"\U00002705 *DAG successful*!\nDAG: {context.get('task_instance').dag_id}\nExecution Time: " \
-              f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\nLog URL:\n" \
-              f"({context.get('task_instance').log_url})"
+    message = f"\U00002705 *DAG successful!*\nDAG: {context.get('task_instance').dag_id}\n*Execution Time:* " \
+              f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n*Log URL:*\n" \
+              f"[{context.get('task_instance').log_url}]"
     success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success', message=message)
     success_alert.execute(context=context)
 
@@ -46,7 +46,7 @@ def on_failure_callback_telegram(context):
 # Main DAG creation
 with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, template_searchpath=f'{SQL_MAIN_FOLDER}',
          schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60),
-         on_failure_callback=on_failure_callback_telegram) as dag:
+         on_failure_callback=on_failure_callback_telegram, on_success_callback=on_success_callback_telegram) as dag:
     # On failure send telegram message
     git_pull = BashOperator(task_id='git_pull', bash_command=f'cd {SQL_MAIN_FOLDER}; git pull',
                             on_failure_callback=on_failure_callback_telegram)
@@ -65,9 +65,6 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
                                         on_failure_callback=on_failure_callback_telegram)
 
         dummy_start >> sql_function >> dummy_end
-
-    telegram_success_message = on_success_callback_telegram
-    dummy_end >> telegram_success_message
 
     if __name__ == "__main__":
         dag.cli()
