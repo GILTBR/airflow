@@ -46,7 +46,7 @@ def on_failure_callback_telegram(context):
 # Main DAG creation
 with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, template_searchpath=f'{SQL_MAIN_FOLDER}',
          schedule_interval=SCHEDULE, dagrun_timeout=dt.timedelta(minutes=60),
-         on_failure_callback=on_failure_callback_telegram, on_success_callback=on_success_callback_telegram) as dag:
+         on_failure_callback=on_failure_callback_telegram) as dag:
     # On failure send telegram message
     git_pull = BashOperator(task_id='git_pull', bash_command=f'cd {SQL_MAIN_FOLDER}; git pull',
                             on_failure_callback=on_failure_callback_telegram)
@@ -66,9 +66,8 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
 
         dummy_start >> sql_function >> dummy_end
 
-    telegram_success = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success',
-                                        message='*bold ttttttttest* www.google.com')
-    dummy_end >> telegram_success
+    telegram_success_message = on_success_callback_telegram
+    dummy_end >> telegram_success_message
 
     if __name__ == "__main__":
         dag.cli()
