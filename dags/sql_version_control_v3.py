@@ -14,7 +14,7 @@ from airflow.utils.dates import days_ago
 # Main DAG info
 DAG_NAME = 'sql_version_control_v3'
 SCHEDULE = None
-DESCRIPTION = 'Version 3: Dynamically split the DAG based on the number of connection'
+DESCRIPTION = 'Version 3: Dynamically split the DAG based on the number of connection that meet the criteria'
 
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
