@@ -32,8 +32,7 @@ def on_success_callback_telegram(context):
     message = f"\U00002705 DAG successful!\nDAG: {context.get('task_instance').dag_id}\nExecution Time: " \
               f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n" \
               f"<a href='{context.get('task_instance').log_url.replace('localhost', IP)}'>Log URL</a>"
-    success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success', message=message,
-                                     parse_mode='HTML')
+    success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success', message=message)
     success_alert.execute(context=context)
 
 
@@ -42,8 +41,7 @@ def on_failure_callback_telegram(context):
               f"{context.get('task_instance').task_id}\nExecution Time: " \
               f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\nLog URL:\n" \
               f"{context.get('task_instance').log_url.replace('localhost', IP)}"
-    failed_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_failed', message=message,
-                                    parse_mode='HTML')
+    failed_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_failed', message=message)
     failed_alert.execute(context=context)
 
 
