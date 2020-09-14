@@ -71,14 +71,17 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
         dummy_db_end = DummyOperator(task_id=f'dummy_end_{db_conn[0]}')
         dummy_start >> dummy_db_start
 
-        for file in diff_files:
-            file_name = file.split('.')[0]
-            sql_function = PostgresOperator(task_id=f'sql_{db_conn[0]}_{file_name}', postgres_conn_id=db_conn[0],
-                                            sql=f'{VERSION}/{file}', autocommit=True,
-                                            on_failure_callback=on_failure_callback_telegram)
-            dummy_db_start >> sql_function >> dummy_db_end
+        if diff_files:
+            for file in diff_files:
+                file_name = file.split('.')[0]
+                sql_function = PostgresOperator(task_id=f'sql_{db_conn[0]}_{file_name}', postgres_conn_id=db_conn[0],
+                                                sql=f'{VERSION}/{file}', autocommit=True,
+                                                on_failure_callback=on_failure_callback_telegram)
+                dummy_db_start >> sql_function >> dummy_db_end
 
-        dummy_db_end >> dummy_end
+            dummy_db_end >> dummy_end
+        else:
+            dummy_db_end >> dummy_end
 
 if __name__ == "__main__":
     dag.cli()
