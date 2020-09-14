@@ -1,7 +1,8 @@
 import datetime as dt
 import os
-import socket
+
 import pendulum
+import requests
 from airflow.models import DAG
 from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
@@ -9,9 +10,6 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.telegram_plugin import TelegramOperator
 from airflow.utils.dates import days_ago
-
-host_name = socket.gethostname()
-host_ip = socket.gethostbyname(host_name)
 
 # Main DAG info
 DAG_NAME = 'sql_version_control_v1'
@@ -23,6 +21,7 @@ VERSION = DAG_NAME.split('_')[-1]
 SQL_MAIN_FOLDER = str(Variable.get('SQL_FOLDER_PATH'))
 SQL_FUNCTIONS_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}'
 LOCAL_TZ = pendulum.timezone('Asia/Jerusalem')
+IP = requests.get('https://checkip.amazonaws.com').text.strip()
 
 # Default DAG arguments
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
@@ -31,18 +30,20 @@ default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_pas
 
 def on_success_callback_telegram(context):
     message = f"\U00002705 DAG successful!\nDAG: {context.get('task_instance').dag_id}\nExecution Time: " \
-              f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\nLog URL:\n" \
-              f"{context.get('task_instance').log_url.replce('localhost', str(host_ip))}"
-    success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success', message=message)
+              f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\n" \
+              f"<a href='{context.get('task_instance').log_url.replce('localhost', IP)}'>Log URL</a>"
+    success_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_success', message=message,
+                                     parse_mode='HTML')
     success_alert.execute(context=context)
 
 
 def on_failure_callback_telegram(context):
-    message = f"\U0000274C *Task Failed*!\nDAG: {context.get('task_instance').dag_id}\nTask: " \
+    message = f"\U0000274C Task Failed!\nDAG: {context.get('task_instance').dag_id}\nTask: " \
               f"{context.get('task_instance').task_id}\nExecution Time: " \
               f"{context.get('execution_date').replace(microsecond=0, tzinfo=LOCAL_TZ)}\nLog URL:\n" \
-              f"{context.get('task_instance').log_url}"
-    failed_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_failed', message=message)
+              f"{context.get('task_instance').log_url.replce('localhost', IP)}"
+    failed_alert = TelegramOperator(telegram_conn_id='telegram_conn_id', task_id='telegram_failed', message=message,
+                                    parse_mode='HTML')
     failed_alert.execute(context=context)
 
 
