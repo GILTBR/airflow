@@ -7,6 +7,7 @@ from airflow.models import Variable, Connection
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
+from airflow.operators.python_operator import PythonOperator
 from airflow.operators.telegram_plugin import TelegramOperator
 from airflow.utils.dates import days_ago
 from git import Repo
@@ -23,6 +24,7 @@ SQL_MAIN_FOLDER = str(Variable.get('SQL_FOLDER_PATH'))
 SQL_FUNCTIONS_FOLDER = f'{SQL_MAIN_FOLDER}/{VERSION}'
 LOCAL_TZ = pendulum.timezone('Asia/Jerusalem')
 IP = requests.get('https://checkip.amazonaws.com').text.strip()
+LOG_FILES_FOLDER = Variable.get('LOG_FILES_FOLDER')
 
 # Default DAG arguments
 default_args = {'owner': 'Gil Tober', 'start_date': days_ago(2), 'depends_on_past': False,
@@ -46,6 +48,17 @@ def on_failure_callback_telegram(context):
     failed_alert.execute(context=context)
 
 
+def create_log_file(**kwargs):
+    with open(
+            f'{LOG_FILES_FOLDER}/{kwargs.get("task_instance").dag_id}_{kwargs.get("execution_date").replace(microsecond=0, tzinfo=LOCAL_TZ)}.log',
+            'w') as file:
+        file.write(f'DAG Name: {kwargs.get("task_instance").dag_id}\n')
+        file.write(f'Execution Time: {kwargs.get("execution_date").replace(microsecond=0, tzinfo=LOCAL_TZ)}\n')
+        file.write(f'Commit Hash: {repo.commit()}\n')
+        file.write(f'Databases: {[db_conn[0] for db_conn in conns]}')
+        file.write(f'Files Changed: {diff_files}\n')
+
+
 session = settings.Session()
 conns = (session.query(Connection.conn_id).filter(Connection.conn_id.like('db_%')).all())
 
@@ -64,7 +77,9 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
     dummy_start = DummyOperator(task_id='dummy_start')
     dummy_end = DummyOperator(task_id='dummy_end')
 
-    git_pull >> dummy_start
+    create_log_file = PythonOperator(task_id='create_log_file', python_callable=create_log_file, provide_context=True)
+
+    git_pull >> create_log_file >> dummy_start
 
     if diff_files:
         for db_conn in conns:
