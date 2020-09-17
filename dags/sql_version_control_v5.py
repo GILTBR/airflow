@@ -1,4 +1,5 @@
 import datetime as dt
+import os
 
 import pendulum
 import requests
@@ -7,15 +8,17 @@ from airflow.models import Variable, Connection
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
+from airflow.operators.python_operator import PythonOperator
 from airflow.operators.telegram_plugin import TelegramOperator
 from airflow.utils.dates import days_ago
 from git import Repo
 
 # Main DAG info
-DAG_NAME = 'sql_version_control_v4'
+DAG_NAME = 'sql_version_control_v5'
 SCHEDULE = None
-DESCRIPTION = 'Version 4: Dynamically split the DAG based on the number of connection. Dynamically creates SQL ' \
-              'tasks based on the files the were changed in the last commit'
+DESCRIPTION = 'Version 5: Dynamically split the DAG based on the number of connection. Dynamically creates SQL ' \
+              'tasks based on the files the were changed in the last commit. Also created a log file and tasks ' \
+              'that should be changed still appear, but are dummy tasks'
 
 # Constant variables
 VERSION = DAG_NAME.split('_')[-1]
@@ -47,6 +50,18 @@ def on_failure_callback_telegram(context):
     failed_alert.execute(context=context)
 
 
+def create_log_file(**kwargs):
+    with open(
+            f'{LOG_FILES_FOLDER}/{kwargs.get("task_instance").dag_id}_{kwargs.get("execution_date").replace(microsecond=0, tzinfo=LOCAL_TZ)}.log',
+            'w') as file:
+        file.write(f'DAG Name: {kwargs.get("task_instance").dag_id}\n')
+        file.write(f'Execution Time: {kwargs.get("execution_date").replace(microsecond=0, tzinfo=LOCAL_TZ)}\n')
+        file.write(f'Commit Hash: {repo.commit()}\n')
+        file.write(f'Databases: {[db_conn[0] for db_conn in conns]}\n')
+        file.write(f'Changed Files: {diff_files}\n')
+        file.write(f'Unchanged Files: {non_diff_files}\n')
+
+
 session = settings.Session()
 conns = (session.query(Connection.conn_id).filter(Connection.conn_id.like('db_%')).all())
 
@@ -56,7 +71,9 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
          on_success_callback=on_success_callback_telegram) as dag:
     repo = Repo(path='/home/giltober/airflow/airflow-dags')
     full_diff = repo.git.diff('HEAD~1..HEAD', name_only=True).split('\n')
+    all_files = [file.replace(f'sql/{VERSION}/', '') for file in os.listdir(SQL_FUNCTIONS_FOLDER)]
     diff_files = [file.replace(f'sql/{VERSION}/', '') for file in full_diff if file.startswith(f'sql/{VERSION}')]
+    non_diff_files = list(set(all_files) - set(diff_files))
 
     # On failure send telegram message
     git_pull = BashOperator(task_id='git_pull', bash_command=f'cd {SQL_MAIN_FOLDER}; git pull',
@@ -65,24 +82,28 @@ with DAG(dag_id=DAG_NAME, description=DESCRIPTION, default_args=default_args, te
     dummy_start = DummyOperator(task_id='dummy_start')
     dummy_end = DummyOperator(task_id='dummy_end')
 
-    git_pull >> dummy_start
+    create_log_file = PythonOperator(task_id='create_log_file', python_callable=create_log_file, provide_context=True)
 
-    if diff_files:
-        for db_conn in conns:
-            dummy_db_start = DummyOperator(task_id=f'dummy_start_{db_conn[0]}')
-            dummy_db_end = DummyOperator(task_id=f'dummy_end_{db_conn[0]}')
-            dummy_start >> dummy_db_start
+    git_pull >> create_log_file >> dummy_start
 
-            for file in diff_files:
-                file_name = file.split('.')[0]
-                sql_function = PostgresOperator(task_id=f'sql_{db_conn[0]}_{file_name}', postgres_conn_id=db_conn[0],
-                                                sql=f'{VERSION}/{file}', autocommit=True,
-                                                on_failure_callback=on_failure_callback_telegram)
-                dummy_db_start >> sql_function >> dummy_db_end
+    for db_conn in conns:
+        dummy_db_start = DummyOperator(task_id=f'dummy_start_{db_conn[0]}')
+        dummy_db_end = DummyOperator(task_id=f'dummy_end_{db_conn[0]}')
+        dummy_start >> dummy_db_start
 
-            dummy_db_end >> dummy_end
-    else:
-        dummy_start >> dummy_end
+        for file in diff_files:
+            file_name = file.split('.')[0]
+            sql_function = PostgresOperator(task_id=f'sql_{db_conn[0]}_{file_name}', postgres_conn_id=db_conn[0],
+                                            sql=f'{VERSION}/{file}', autocommit=True,
+                                            on_failure_callback=on_failure_callback_telegram)
+            dummy_db_start >> sql_function >> dummy_db_end
+
+        for file in non_diff_files:
+            file_name = file.split('.')[0]
+            dummy_sql_function = DummyOperator(task_id=f'sql_{db_conn[0]}_{file_name}')
+            dummy_db_start >> dummy_sql_function >> dummy_db_end
+
+        dummy_db_end >> dummy_end
 
 if __name__ == "__main__":
     dag.cli()
